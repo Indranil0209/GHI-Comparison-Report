@@ -3,296 +3,401 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GHI Pair Comparison Audit</title>
+<title>GHI Audit Center</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
-  :root{
-    --bg:#000000;
-    --panel:#0c0d0e;
-    --panel-raised:#141617;
-    --border:#1e2123;
-    --border-soft:#1a1c1e;
-    --text:#F2F3F4;
-    --text-muted:#8B9196;
-    --text-faint:#54595c;
-    --blue:#3B82F6;
-    --blue-dim:#3B82F626;
-    --red:#EF4444;
-    --red-dim:#EF44441f;
-    --red-border:#EF444455;
-    --amber:#F59E0B;
-    --green:#22C55E;
-    --green-dim:#22C55E1a;
-    --mono:'IBM Plex Mono', ui-monospace, monospace;
-    --sans:'Inter', system-ui, sans-serif;
-    --display:'Space Grotesk','Inter', sans-serif;
-    --radius:10px;
-    --shadow-md:0 10px 30px -10px #00000090;
-  }
-  *{box-sizing:border-box;}
-  html,body{height:100%;}
-  body{ margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:14px; -webkit-font-smoothing:antialiased; }
-  ::-webkit-scrollbar{ width:10px; height:10px; }
-  ::-webkit-scrollbar-track{ background:transparent; }
-  ::-webkit-scrollbar-thumb{ background:var(--border); border-radius:8px; border:2px solid var(--bg); }
-  a{ color:var(--blue); text-decoration:none; }
-  button, input{ font-family:inherit; }
-  button{ cursor:pointer; }
-  @keyframes fadeUp{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:translateY(0); } }
-
-  #main{ max-width:1180px; margin:0 auto; padding:34px 28px 70px; }
-
-  .eyebrow{ font-family:var(--mono); font-size:11px; color:var(--blue); letter-spacing:.09em; text-transform:uppercase; margin:0 0 8px; }
-  .page-title{ font-family:var(--display); font-size:30px; font-weight:700; margin:0; letter-spacing:-.015em; }
-  .page-sub{ color:var(--text-muted); font-size:13.5px; margin-top:9px; max-width:720px; line-height:1.6; }
-  .page-sub b{ font-family:var(--mono); font-weight:600; color:var(--text); }
-
-  .dropzone{
-    margin-top:22px; border:1.5px dashed var(--border-soft); border-radius:var(--radius);
-    background:var(--panel); padding:34px 20px; text-align:center; cursor:pointer; transition:.15s;
-  }
-  .dropzone:hover{ border-color:var(--blue); background:var(--panel-raised); }
-  .dropzone svg{ width:26px; height:26px; color:var(--text-faint); margin-bottom:10px; }
-  .dz-text{ font-size:13.5px; color:var(--text-muted); }
-  .dz-file{ font-family:var(--mono); font-size:12px; color:var(--blue); margin-top:8px; }
-
-  .stat-row{ display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin:26px 0; animation:fadeUp .3s ease both; }
-  .stat-card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:16px 17px 15px; }
-  .stat-label{ font-family:var(--mono); font-size:10.5px; color:var(--text-faint); letter-spacing:.07em; text-transform:uppercase; }
-  .stat-num{ font-family:var(--display); font-size:28px; font-weight:700; line-height:1; margin-top:10px; }
-  .stat-card.red .stat-num{ color:var(--red); }
-  .stat-card.green .stat-num{ color:var(--green); }
-  .stat-desc{ font-size:11.5px; color:var(--text-faint); margin-top:7px; }
-
-  .toolbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin:30px 0 12px; flex-wrap:wrap; }
-  .section-title{ font-family:var(--display); font-size:17px; font-weight:700; margin:0; }
-  .controls{ display:flex; gap:8px; flex-wrap:wrap; }
-  select, .btn-primary, .btn-secondary{
-    font-family:var(--mono); font-size:12px; border-radius:7px; padding:8px 13px; border:1px solid var(--border-soft);
-    background:var(--panel-raised); color:var(--text);
-  }
-  .btn-primary{ background:var(--blue); border:none; color:#fff; font-weight:600; }
-  .btn-primary:hover{ filter:brightness(1.1); }
-  .btn-secondary:hover{ border-color:var(--text-faint); }
-  .btn-primary:disabled{ opacity:.4; cursor:not-allowed; }
-
-  table{ width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
-  thead th{
-    text-align:left; font-family:var(--mono); font-size:10.5px; letter-spacing:.05em; text-transform:uppercase;
-    color:var(--text-faint); padding:10px 14px; border-bottom:1px solid var(--border); background:var(--panel-raised);
-    position:sticky; top:0;
-  }
-  tbody td{ padding:9px 14px; border-bottom:1px solid var(--border-soft); font-size:12.5px; }
-  tbody tr:hover{ background:var(--panel-raised); }
-  .pair-tag{ font-family:var(--mono); font-size:11px; padding:2px 8px; border-radius:5px; background:var(--red-dim); color:var(--red); border:1px solid var(--red-border); }
-  .diff-pos{ color:var(--amber); }
-  .diff-neg{ color:var(--blue); }
-  .table-wrap{ max-height:520px; overflow:auto; border-radius:var(--radius); }
-  .empty-state{ text-align:center; padding:50px 20px; color:var(--text-faint); font-family:var(--mono); font-size:12.5px; }
-  .pair-section{ margin-bottom:34px; }
-  .pair-head{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
-  .pair-head h3{ font-family:var(--display); font-size:14.5px; font-weight:700; margin:0; }
-  .pair-count{ font-family:var(--mono); font-size:11px; color:var(--text-faint); }
-  #toast{
-    position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:var(--panel-raised);
-    border:1px solid var(--border-soft); padding:10px 18px; border-radius:8px; font-size:12.5px; opacity:0;
-    transition:.25s; pointer-events:none;
-  }
-  #toast.show{ opacity:1; }
+:root {
+  --bg: #070a12; --surface: rgba(17,23,38,.78); --surface-2: rgba(26,34,54,.82);
+  --surface-3:#202a42; --border:rgba(142,164,207,.18); --text:#f5f7ff; --muted:#9ca9c3;
+  --faint:#68758f; --blue:#5c9dff; --purple:#9b7cff; --cyan:#42e8d1; --green:#2de28d;
+  --red:#ff5f7e; --amber:#ffc15c; --shadow:0 24px 80px rgba(0,0,0,.34);
+  --sans:"DM Sans",sans-serif; --display:"Space Grotesk",sans-serif; --mono:"IBM Plex Mono",monospace;
+}
+* { box-sizing:border-box; }
+html { min-height:100%; background:var(--bg); }
+body {
+  min-height:100vh; margin:0; color:var(--text); font-family:var(--sans);
+  background:radial-gradient(circle at 8% 5%,rgba(52,116,255,.23),transparent 28%),
+             radial-gradient(circle at 92% 3%,rgba(142,72,255,.22),transparent 27%),
+             radial-gradient(circle at 50% 100%,rgba(34,223,198,.09),transparent 30%),var(--bg);
+  overflow-x:hidden;
+}
+body::before,body::after {
+  position:fixed; content:""; z-index:-1; width:320px; height:320px; border-radius:50%;
+  filter:blur(90px); opacity:.18; pointer-events:none; animation:float 12s ease-in-out infinite alternate;
+}
+body::before { top:30%; left:-170px; background:var(--blue); }
+body::after { right:-160px; bottom:10%; background:var(--purple); animation-delay:-5s; }
+@keyframes float { to { transform:translate(80px,-40px) scale(1.15); } }
+button,input { font:inherit; } button { cursor:pointer; }
+#main { width:min(1280px,100%); margin:auto; padding:28px 25px 75px; }
+.topbar { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:70px; }
+.brand { display:flex; align-items:center; gap:13px; }
+.brand-icon { display:grid; place-items:center; width:45px; height:45px; border:1px solid rgba(255,255,255,.2); border-radius:15px; background:linear-gradient(135deg,var(--blue),var(--purple)); box-shadow:0 12px 34px rgba(92,157,255,.34); font-size:24px; font-weight:700; }
+.brand-name { font:700 17px var(--display); letter-spacing:-.02em; }
+.brand-sub { margin-top:4px; color:var(--muted); font-size:11px; }
+.status { display:flex; align-items:center; gap:9px; padding:9px 13px; border:1px solid var(--border); border-radius:30px; color:var(--muted); font:11px var(--mono); background:rgba(255,255,255,.035); }
+.status-dot { width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 13px var(--green); }
+.hero { position:relative; max-width:850px; }
+.eyebrow { display:flex; align-items:center; gap:10px; margin-bottom:17px; color:var(--cyan); font:600 11px var(--mono); letter-spacing:.14em; }
+.eyebrow::before { width:28px; height:1px; content:""; background:var(--cyan); box-shadow:0 0 10px var(--cyan); }
+.page-title { margin:0; font:700 clamp(38px,7vw,70px)/.98 var(--display); letter-spacing:-.065em; background:linear-gradient(105deg,#fff 20%,#b9d5ff 52%,#a88bff 90%); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.page-sub { max-width:700px; margin:22px 0 0; color:var(--muted); font-size:15px; line-height:1.75; }
+.page-sub b { padding:3px 7px; border:1px solid rgba(92,157,255,.2); border-radius:5px; color:#bcd6ff; background:rgba(92,157,255,.1); font:11px var(--mono); }
+.dropzone { position:relative; display:flex; align-items:center; gap:20px; max-width:850px; min-height:135px; margin-top:34px; padding:25px 28px; border:1px dashed rgba(120,165,240,.48); border-radius:22px; background:linear-gradient(135deg,rgba(24,38,70,.78),rgba(16,21,35,.72)); box-shadow:var(--shadow),inset 0 1px rgba(255,255,255,.06); transition:.25s ease; cursor:pointer; }
+.dropzone::after { position:absolute; inset:0; border-radius:inherit; content:""; pointer-events:none; background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.07),transparent 65%); transform:translateX(-100%); transition:.7s; }
+.dropzone:hover::after { transform:translateX(100%); }
+.dropzone:hover,.dropzone.dragover { border-color:var(--cyan); background:linear-gradient(135deg,rgba(31,61,105,.85),rgba(22,27,49,.86)); transform:translateY(-3px); box-shadow:0 22px 65px rgba(49,120,255,.2); }
+.upload-icon { display:grid; flex:0 0 58px; place-items:center; width:58px; height:58px; border-radius:17px; color:#cce0ff; background:linear-gradient(135deg,rgba(92,157,255,.3),rgba(155,124,255,.3)); }
+.upload-icon svg { width:30px; }
+.dz-content { flex:1; }
+.dz-title { margin-bottom:5px; font:600 16px var(--display); }
+.dz-text { color:var(--muted); font-size:12px; }
+.dz-file { min-height:17px; margin-top:9px; color:var(--cyan); font:11px var(--mono); }
+.upload-button { padding:10px 15px; border:0; border-radius:9px; color:white; background:linear-gradient(135deg,var(--blue),var(--purple)); font:600 11px var(--mono); box-shadow:0 8px 20px rgba(92,157,255,.22); }
+#results { display:none; margin-top:55px; }
+.section-heading { display:flex; align-items:end; justify-content:space-between; gap:15px; margin-bottom:18px; }
+.section-heading h2 { margin:0; font:700 24px var(--display); letter-spacing:-.04em; }
+.section-heading p { margin:5px 0 0; color:var(--muted); font-size:12px; }
+.audit-card { margin-bottom:60px; padding:30px; border:1px solid var(--border); border-radius:22px; background:linear-gradient(145deg,rgba(24,32,51,.82),rgba(12,16,27,.9)); box-shadow:0 20px 60px rgba(0,0,0,.25); }
+.audit-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:25px; padding-bottom:18px; border-bottom:1px solid var(--border); }
+.audit-header h3 { margin:0; font:700 20px var(--display); }
+.stat-row { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:18px; }
+.stat-card { position:relative; overflow:hidden; min-height:142px; padding:19px; border:1px solid var(--border); border-radius:18px; background:linear-gradient(145deg,rgba(31,42,66,.86),rgba(14,19,32,.9)); box-shadow:0 12px 35px rgba(0,0,0,.2); transition:.25s; }
+.stat-card:hover { border-color:rgba(140,180,255,.4); transform:translateY(-4px); }
+.stat-card::before { position:absolute; right:-32px; top:-42px; width:125px; height:125px; border-radius:50%; content:""; background:var(--blue); opacity:.12; }
+.stat-card.red::before { background:var(--red); } .stat-card.green::before { background:var(--green); }
+.stat-icon { display:grid; place-items:center; width:28px; height:28px; margin-bottom:13px; border-radius:8px; color:var(--blue); background:rgba(92,157,255,.13); font-size:14px; }
+.stat-card.red .stat-icon { color:var(--red); background:rgba(255,95,126,.13); }
+.stat-card.green .stat-icon { color:var(--green); background:rgba(45,226,141,.13); }
+.stat-label { color:var(--muted); font:10px var(--mono); letter-spacing:.06em; text-transform:uppercase; }
+.stat-num { margin-top:5px; font:700 31px var(--display); }
+.stat-card.red .stat-num { color:var(--red); } .stat-card.green .stat-num { color:var(--green); }
+.stat-desc { margin-top:5px; color:var(--faint); font-size:11px; }
+.dashboard-grid { display:grid; grid-template-columns:.9fr 1.5fr; gap:16px; margin-bottom:35px; }
+.panel { min-height:315px; padding:22px; border:1px solid var(--border); border-radius:19px; background:linear-gradient(145deg,rgba(24,32,51,.82),rgba(12,16,27,.9)); box-shadow:0 15px 45px rgba(0,0,0,.22); }
+.panel-title { margin:0; font:700 17px var(--display); }
+.panel-sub { margin:5px 0 15px; color:var(--muted); font-size:12px; }
+.chart-wrap { position:relative; height:245px; }
+.health { display:flex; align-items:center; justify-content:center; flex-direction:column; height:245px; }
+.health-ring { display:grid; position:relative; place-items:center; width:164px; height:164px; border-radius:50%; background:conic-gradient(var(--green) 0deg,#29354b 0deg); box-shadow:0 0 35px rgba(45,226,141,.1); }
+.health-ring::after { position:absolute; inset:12px; border-radius:50%; content:""; background:#141c2d; }
+.health-value { position:relative; z-index:1; text-align:center; }
+.health-value strong { display:block; font:700 31px var(--display); }
+.health-value span { color:var(--muted); font:10px var(--mono); letter-spacing:.08em; }
+.health-caption { margin-top:16px; color:var(--muted); font-size:12px; text-align:center; }
+.toolbar { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:16px; }
+.section-title { margin:0; font:700 23px var(--display); letter-spacing:-.04em; }
+.btn-secondary { padding:10px 15px; border:1px solid var(--border); border-radius:9px; color:var(--text); background:var(--surface-2); font:11px var(--mono); transition:.2s; }
+.btn-secondary:hover { border-color:var(--cyan); color:var(--cyan); background:rgba(66,232,209,.08); }
+.pair-section { margin-bottom:25px; }
+.pair-head { display:flex; align-items:center; gap:11px; margin-bottom:10px; }
+.pair-head h3 { margin:0; font:700 15px var(--display); }
+.pair-count { padding:4px 8px; border:1px solid var(--border); border-radius:20px; color:var(--muted); background:rgba(255,255,255,.04); font:10px var(--mono); }
+.table-wrap { max-height:420px; overflow:auto; border:1px solid var(--border); border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.16); }
+table { width:100%; border-collapse:collapse; background:rgba(14,19,31,.86); }
+th { position:sticky; top:0; z-index:1; padding:12px 14px; border-bottom:1px solid var(--border); color:var(--muted); background:#1b2539; font:10px var(--mono); letter-spacing:.05em; text-align:left; text-transform:uppercase; }
+td { padding:12px 14px; border-bottom:1px solid rgba(142,164,207,.1); font-size:12px; }
+tbody tr { transition:.15s; } tbody tr:hover { background:rgba(92,157,255,.08); }
+.diff-pos { color:var(--amber); font-weight:700; } .diff-neg { color:var(--blue); font-weight:700; }
+.empty-state { padding:35px 20px; color:var(--green); font:12px var(--mono); text-align:center; }
+#toast { position:fixed; left:50%; bottom:25px; z-index:5; padding:12px 18px; border:1px solid var(--border); border-radius:12px; color:var(--text); background:#1b2942; box-shadow:var(--shadow); font-size:12px; opacity:0; pointer-events:none; transform:translate(-50%,20px); transition:.25s; }
+#toast.show { opacity:1; transform:translate(-50%,0); }
+@media (max-width:850px) { #main{padding:22px 15px 50px;} .topbar{margin-bottom:50px;} .stat-row{grid-template-columns:repeat(2,1fr);} .dashboard-grid{grid-template-columns:1fr;} }
+@media (max-width:560px) { .status{display:none;} .page-title{font-size:42px;} .dropzone{display:block;text-align:center;} .upload-icon{margin:0 auto 14px;} .upload-button{display:none;} .stat-card{min-height:125px;padding:15px;} .stat-num{font-size:26px;} th,td{padding:9px 8px;font-size:11px;} }
 </style>
 </head>
 <body>
-<div id="main">
-  <div class="eyebrow">GHI FORECAST AUDIT</div>
-  <h1 class="page-title">Pair Comparison Audit</h1>
-  <div class="page-sub">Upload a PSS GHI Forecast vs Actual file. Compares <b>PSD00 vs XSD0</b>, <b>PN125 vs XN12</b>, and <b>PE100 vs XE10</b> block by block. Equal values are ignored — only mismatched time blocks are flagged, with date.</div>
-
-  <div class="dropzone" id="dropzone">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-    <div class="dz-text">Click to select a .xlsx / .xls / .csv file</div>
-    <div class="dz-file" id="dz-file"></div>
-  </div>
-  <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none">
-
-  <div id="results" style="display:none;">
-    <div class="stat-row" id="stat-row"></div>
-
-    <div class="toolbar">
-      <h2 class="section-title">Flagged Time Blocks</h2>
-      <button class="btn-secondary" id="btn-download">Download Excel report</button>
+<main id="main">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">⌁</div>
+      <div>
+        <div class="brand-name">GHI Audit Center</div>
+        <div class="brand-sub">Forecast accuracy monitoring</div>
+      </div>
     </div>
+    <div class="status"><span class="status-dot"></span>System ready</div>
+  </header>
 
-    <div id="pair-sections"></div>
-  </div>
-</div>
+  <section class="hero">
+    <div class="eyebrow">GHI FORECAST AUDIT</div>
+    <h1 class="page-title">Pair Comparison<br>Audit</h1>
+    <p class="page-sub">Upload multiple PSS files. Each file gets its own separate comparison report for <b>PSD00 vs XSD0</b>, <b>PN125 vs XN12</b>, and <b>PE100 vs XE10</b>.</p>
+
+    <div class="dropzone" id="dropzone">
+      <div class="upload-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+          <path d="M12 16V4M12 4 8 8M12 4l4 4"/>
+          <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+        </svg>
+      </div>
+      <div class="dz-content">
+        <div class="dz-title">Drop your PSS files here</div>
+        <div class="dz-text">Select multiple .xlsx, .xls, or .csv files — each gets its own report</div>
+        <div class="dz-file" id="dz-file"></div>
+      </div>
+      <button class="upload-button" type="button">BROWSE FILES</button>
+    </div>
+    <input type="file" id="file-input" accept=".xlsx,.xls,.csv" multiple hidden>
+  </section>
+
+  <section id="results">
+    <div class="section-heading">
+      <div>
+        <h2>Separate PSS Reports</h2>
+        <p>Each uploaded file has its own independent audit results</p>
+      </div>
+    </div>
+    <div id="audit-container"></div>
+  </section>
+</main>
+
 <div id="toast"></div>
 
 <script>
 const PAIRS = [
-  { label:'PSD00 vs XSD0', a:'PSD00', b:'XSD0' },
-  { label:'PN125 vs XN12', a:'PN125', b:'XN12' },
-  { label:'PE100 vs XE10', a:'PE100', b:'XE10' },
+  { label: "PSD00 vs XSD0", a: "PSD00", b: "XSD0" },
+  { label: "PN125 vs XN12", a: "PN125", b: "XN12" },
+  { label: "PE100 vs XE10", a: "PE100", b: "XE10" }
 ];
 
-let mismatches = [];
-let fileLabel = '';
+let audits = [];
+let mismatchCharts = [];
+const $ = selector => document.querySelector(selector);
 
-function $(s){ return document.querySelector(s); }
-
-function showToast(msg){
-  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
-  setTimeout(()=> t.classList.remove('show'), 2600);
+function showToast(message) {
+  const toast = $("#toast");
+  toast.textContent = message;
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), 2800);
 }
 
-$('#dropzone').addEventListener('click', ()=> $('#file-input').click());
-$('#file-input').addEventListener('change', (e)=>{
-  const f = e.target.files[0];
-  if (f) handleFile(f);
-});
-
-function findCol(headers, key){
-  const idx = headers.findIndex(h => String(h||'').toUpperCase().includes(key.toUpperCase()));
-  return idx;
+function findCol(headers, key) {
+  if (!Array.isArray(headers)) return -1;
+  return headers.findIndex(v => String(v ?? "").toUpperCase().includes(key.toUpperCase()));
 }
 
-function excelDateToStr(v){
-  if (v instanceof Date) return v.toISOString().slice(0,10);
-  if (typeof v === 'number'){
-    const d = new Date(Math.round((v - 25569) * 86400 * 1000));
+function excelDateToStr(value) {
+  if (value instanceof Date) return value.toISOString().slice(0,10);
+  if (typeof value === "number") {
+    const d = new Date(Math.round((value - 25569) * 86400 * 1000));
     return d.toISOString().slice(0,10);
   }
-  return String(v ?? '');
+  return String(value ?? "");
 }
 
-async function handleFile(file){
-  $('#dz-file').textContent = file.name;
-  try{
+function numberValue(v) {
+  if (v === undefined || v === null || v === "") return 0;
+  return Number(v);
+}
+
+$("#dropzone").addEventListener("click", e => { if (!e.target.closest(".upload-button")) $("#file-input").click(); });
+$(".upload-button").addEventListener("click", e => { e.stopPropagation(); $("#file-input").click(); });
+
+$("#dropzone").addEventListener("dragover", e => { e.preventDefault(); $("#dropzone").classList.add("dragover"); });
+$("#dropzone").addEventListener("dragleave", () => $("#dropzone").classList.remove("dragover"));
+$("#dropzone").addEventListener("drop", e => {
+  e.preventDefault(); $("#dropzone").classList.remove("dragover");
+  if (e.dataTransfer.files.length) handleMultipleFiles(e.dataTransfer.files);
+});
+
+$("#file-input").addEventListener("change", e => {
+  if (e.target.files.length) handleMultipleFiles(e.target.files);
+});
+
+async function handleMultipleFiles(fileList) {
+  $("#dz-file").textContent = `Processing ${fileList.length} file(s)…`;
+  for (let i = 0; i < fileList.length; i++) {
+    await processSingleFile(fileList[i]);
+  }
+  $("#dz-file").textContent = `✓ ${fileList.length} PSS file(s) processed`;
+  renderAllAudits();
+  showToast("All PSS audits completed");
+}
+
+async function processSingleFile(file) {
+  try {
     const isCSV = /\.csv$/i.test(file.name);
-    const data = isCSV ? await file.text() : await file.arrayBuffer();
-    const wb = XLSX.read(data, { type: isCSV ? 'string' : 'array', cellDates:true });
+    const raw = isCSV ? await file.text() : await file.arrayBuffer();
+    const wb = XLSX.read(raw, { type: isCSV ? "string" : "array", cellDates: true });
     const sheet = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet, { header:1, raw:true });
-    if (!rows.length){ showToast('No data found in file'); return; }
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true });
+
+    if (!rows.length || !Array.isArray(rows[0])) return;
 
     const headers = rows[0];
-    const dateCol = findCol(headers, 'Date');
-    const tbCol = findCol(headers, 'Time Block');
+    const dateCol = findCol(headers, "Date");
+    const tbCol = findCol(headers, "Time Block");
 
     const pairCols = PAIRS.map(p => {
-      const colA = findCol(headers, p.a);
-      const colB = findCol(headers, p.b);
-      return {
-        ...p,
-        colA, colB,
-        headerA: colA > -1 ? String(headers[colA]) : p.a,
-        headerB: colB > -1 ? String(headers[colB]) : p.b,
-      };
+      const ca = findCol(headers, p.a);
+      const cb = findCol(headers, p.b);
+      return { ...p, colA: ca, colB: cb, headerA: ca > -1 ? String(headers[ca]) : p.a, headerB: cb > -1 ? String(headers[cb]) : p.b };
     });
 
-    const missing = pairCols.filter(p => p.colA === -1 || p.colB === -1);
-    if (missing.length){
-      showToast(`Missing columns for: ${missing.map(m=>m.label).join(', ')}`);
-    }
+    let fileMismatches = [];
+    let fileTotal = 0;
 
-    mismatches = [];
-    for (let r = 1; r < rows.length; r++){
+    for (let r = 1; r < rows.length; r++) {
       const row = rows[r];
-      if (!row || !row.length) continue;
-      const dateVal = dateCol > -1 ? excelDateToStr(row[dateCol]) : '';
-      const tbVal = tbCol > -1 ? row[tbCol] : '';
-      for (const p of pairCols){
-        if (p.colA === -1 || p.colB === -1) continue;
-        let v1 = row[p.colA]; let v2 = row[p.colB];
-        v1 = (v1===undefined||v1===null||v1==='') ? 0 : Number(v1);
-        v2 = (v2===undefined||v2===null||v2==='') ? 0 : Number(v2);
-        if (Number.isNaN(v1) || Number.isNaN(v2)) continue;
-        if (Math.round(v1*1000) !== Math.round(v2*1000)){
-          mismatches.push({ date:dateVal, tb:tbVal, pair:p.label, headerA:p.headerA, headerB:p.headerB, v1, v2, diff: Math.round((v1-v2)*1000)/1000 });
+      if (!Array.isArray(row) || !row.length) continue;
+      const date = dateCol > -1 ? excelDateToStr(row[dateCol]) : "";
+      const tb = tbCol > -1 ? row[tbCol] : "";
+
+      for (const pc of pairCols) {
+        if (pc.colA === -1 || pc.colB === -1) continue;
+        const va = numberValue(row[pc.colA]);
+        const vb = numberValue(row[pc.colB]);
+        if (isNaN(va) || isNaN(vb)) continue;
+        fileTotal++;
+        if (Math.round(va * 1000) !== Math.round(vb * 1000)) {
+          fileMismatches.push({
+            date, timeBlock: tb, pair: pc.label,
+            headerA: pc.headerA, headerB: pc.headerB,
+            valueA: va, valueB: vb, diff: Math.round((va - vb) * 1000) / 1000
+          });
         }
       }
     }
-    fileLabel = file.name.replace(/\.(xlsx|xls|csv)$/i,'');
-    renderResults();
-  }catch(err){
-    console.error(err);
-    showToast('Could not read file: ' + err.message);
+
+    audits.push({
+      fileName: file.name,
+      fileLabel: file.name.replace(/\.(xlsx|xls|csv)$/i, ""),
+      mismatches: fileMismatches,
+      totalComparisons: fileTotal
+    });
+  } catch (err) {
+    showToast("Failed to read " + file.name);
   }
 }
 
-function renderResults(){
-  $('#results').style.display = 'block';
-  const counts = {};
-  PAIRS.forEach(p => counts[p.label] = 0);
-  mismatches.forEach(m => counts[m.pair]++);
+function renderAllAudits() {
+  $("#results").style.display = "block";
+  const container = $("#audit-container");
+  container.innerHTML = "";
+  mismatchCharts.forEach(c => c.destroy());
+  mismatchCharts = [];
 
-  const stats = [
-    { label:'Total Mismatches', num: mismatches.length, cls: mismatches.length ? 'red' : 'green' },
-    ...PAIRS.map(p => ({ label:p.label, num: counts[p.label], cls: counts[p.label] ? 'red' : 'green' }))
-  ];
-  $('#stat-row').innerHTML = stats.map(s => `
-    <div class="stat-card ${s.cls}">
-      <div class="stat-label">${s.label}</div>
-      <div class="stat-num">${s.num}</div>
-      <div class="stat-desc">${s.num ? 'flagged blocks' : 'all values equal'}</div>
-    </div>
-  `).join('');
+  audits.forEach((audit, idx) => {
+    const counts = {};
+    PAIRS.forEach(p => counts[p.label] = 0);
+    audit.mismatches.forEach(m => counts[m.pair]++);
 
-  renderPairSections();
-}
+    const statsHTML = PAIRS.map(p => ({ label: p.label, num: counts[p.label], cls: counts[p.label] ? "red" : "green" }))
+    .map(s => `
+      <div class="stat-card ${s.cls}">
+        <div class="stat-icon">${s.cls === "red" ? "!" : "✓"}</div>
+        <div class="stat-label">${s.label}</div>
+        <div class="stat-num">${s.num}</div>
+        <div class="stat-desc">${s.num ? "flagged blocks" : "all values equal"}</div>
+      </div>`).join("");
 
-function renderPairSections(){
-  const container = $('#pair-sections');
-  container.innerHTML = PAIRS.map(p => {
-    const rows = mismatches.filter(m => m.pair === p.label);
-    const headerA = rows[0]?.headerA || p.a;
-    const headerB = rows[0]?.headerB || p.b;
-    const body = rows.length
-      ? rows.map(m => `
+    const matched = Math.max(audit.totalComparisons - audit.mismatches.length, 0);
+    const accuracy = audit.totalComparisons ? Math.round(matched / audit.totalComparisons * 100) : 100;
+    const deg = accuracy * 3.6;
+
+    const pairsHTML = PAIRS.map(pair => {
+      const rows = audit.mismatches.filter(m => m.pair === pair.label);
+      const ha = rows[0]?.headerA || pair.a;
+      const hb = rows[0]?.headerB || pair.b;
+      const body = rows.length ? rows.map(item => `
         <tr>
-          <td>${m.date}</td>
-          <td>${m.tb}</td>
-          <td>${m.v1}</td>
-          <td>${m.v2}</td>
-          <td class="${m.diff>=0?'diff-pos':'diff-neg'}">${m.diff>0?'+':''}${m.diff}</td>
-        </tr>
-      `).join('')
-      : `<tr><td colspan="5"><div class="empty-state">No mismatches — all values equal.</div></td></tr>`;
-    return `
-      <div class="pair-section">
-        <div class="pair-head">
-          <h3>${p.label}</h3>
-          <span class="pair-count">${rows.length} flagged block${rows.length===1?'':'s'}</span>
+          <td>${item.date}</td><td>${item.timeBlock}</td>
+          <td>${item.valueA}</td><td>${item.valueB}</td>
+          <td class="${item.diff >= 0 ? "diff-pos" : "diff-neg"}">${item.diff > 0 ? "+" : ""}${item.diff}</td>
+        </tr>`).join("") : `<tr><td colspan="5"><div class="empty-state">✓ No mismatches — all values equal</div></td></tr>`;
+
+      return `
+        <div class="pair-section">
+          <div class="pair-head"><h3>${pair.label}</h3><span class="pair-count">${rows.length} flagged</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Time Block</th><th>${ha}</th><th>${hb}</th><th>Difference</th></tr></thead>
+              <tbody>${body}</tbody>
+            </table>
+          </div>
+        </div>`;
+    }).join("");
+
+    const card = document.createElement("div");
+    card.className = "audit-card";
+    card.innerHTML = `
+      <div class="audit-header">
+        <h3>📁 ${audit.fileName}</h3>
+        <button class="btn-secondary" data-idx="${idx}">↓ Download Report</button>
+      </div>
+      <div class="stat-row">${statsHTML}</div>
+      <div class="dashboard-grid">
+        <div class="panel">
+          <h2 class="panel-title">Audit health</h2>
+          <div class="panel-sub">Percentage of compared values that match</div>
+          <div class="health">
+            <div class="health-ring" style="background:conic-gradient(var(--green) ${deg}deg, #29354b ${deg}deg)">
+              <div class="health-value"><strong>${accuracy}%</strong><span>ACCURACY</span></div>
+            </div>
+            <div class="health-caption">${matched} of ${audit.totalComparisons} values matched</div>
+          </div>
         </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Date</th><th>Time Block</th><th>${headerA}</th><th>${headerB}</th><th>Difference</th></tr>
-            </thead>
-            <tbody>${body}</tbody>
-          </table>
+        <div class="panel">
+          <h2 class="panel-title">Mismatches by pair</h2>
+          <div class="panel-sub">Flagged time blocks for each comparison</div>
+          <div class="chart-wrap"><canvas id="chart-${idx}"></canvas></div>
         </div>
       </div>
+      <div class="toolbar"><h2 class="section-title">Flagged Time Blocks</h2></div>
+      ${pairsHTML}
     `;
-  }).join('');
+    container.appendChild(card);
+
+    const canvas = card.querySelector(`#chart-${idx}`);
+    const chart = new Chart(canvas, {
+      type: "bar",
+      data: {
+        labels: PAIRS.map(p => p.label),
+        datasets: [{
+          label: "Mismatches",
+          data: PAIRS.map(p => counts[p.label]),
+          borderRadius: 8,
+          backgroundColor: ["#5c9dff","#9b7cff","#ff5f7e"],
+          maxBarThickness: 52
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: "#9ca9c3", font: { size: 10 } } },
+          y: { beginAtZero: true, ticks: { color: "#9ca9c3", precision: 0 }, grid: { color: "rgba(142,164,207,.12)" } }
+        }
+      }
+    });
+    mismatchCharts.push(chart);
+
+    card.querySelector("button").addEventListener("click", () => downloadReport(idx));
+  });
 }
 
-$('#btn-download').addEventListener('click', ()=>{
-  if (!mismatches.length){ showToast('No mismatches to export'); return; }
+function downloadReport(idx) {
+  const audit = audits[idx];
+  if (!audit.mismatches.length) { showToast("No mismatches to export"); return; }
+
   const wb = XLSX.utils.book_new();
-  PAIRS.forEach(p => {
-    const rows = mismatches.filter(m => m.pair === p.label);
-    const headerA = rows[0]?.headerA || p.a;
-    const headerB = rows[0]?.headerB || p.b;
-    const data = [['Date','Time Block',headerA,headerB,'Difference'], ...rows.map(m => [m.date, m.tb, m.v1, m.v2, m.diff])];
+  PAIRS.forEach(pair => {
+    const rows = audit.mismatches.filter(m => m.pair === pair.label);
+    const ha = rows[0]?.headerA || pair.a;
+    const hb = rows[0]?.headerB || pair.b;
+    const data = [["Date","Time Block",ha,hb,"Difference"], ...rows.map(m => [m.date,m.timeBlock,m.valueA,m.valueB,m.diff])];
     const ws = XLSX.utils.aoa_to_sheet(data);
-    ws['!cols'] = [{wch:12},{wch:14},{wch:16},{wch:16},{wch:10}];
-    XLSX.utils.book_append_sheet(wb, ws, p.label.slice(0,31));
+    ws["!cols"] = [{wch:12},{wch:14},{wch:16},{wch:16},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, ws, pair.label.slice(0,31));
   });
-  XLSX.writeFile(wb, `${fileLabel || 'GHI'}_Mismatch_Report.xlsx`);
-  showToast('Report downloaded');
-});
+  XLSX.writeFile(wb, `${audit.fileLabel}_PSS_Report.xlsx`);
+  showToast("Report downloaded for " + audit.fileLabel);
+}
 </script>
 </body>
 </html>
