@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GHI Comparison</title>
+<title>GHI Pair Comparison Audit</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -47,6 +47,7 @@ body {
     radial-gradient(circle at 50% 100%,rgba(34,223,198,.1),transparent 32%),
     var(--bg);
   overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
 }
 
 body::before {
@@ -78,8 +79,7 @@ body::after {
   pointer-events:none;
 }
 
-button,input,select { font:inherit; }
-button { cursor:pointer; }
+button { font:inherit; cursor:pointer; }
 
 #main {
   width:min(1180px,100%);
@@ -141,7 +141,7 @@ button { cursor:pointer; }
 
 .hero {
   position:relative;
-  max-width:850px;
+  max-width:900px;
   margin-bottom:32px;
 }
 
@@ -175,7 +175,7 @@ button { cursor:pointer; }
 }
 
 .page-sub {
-  max-width:720px;
+  max-width:760px;
   margin:22px 0 0;
   color:var(--muted);
   font-size:15px;
@@ -264,17 +264,11 @@ button { cursor:pointer; }
 
 .upload-icon svg { width:27px; }
 
-.dz-title {
-  position:relative;
-  z-index:1;
-  font:600 15px var(--display);
-}
-
 .dz-text {
   position:relative;
   z-index:1;
   color:var(--muted);
-  font-size:12px;
+  font-size:13px;
 }
 
 .dz-file {
@@ -295,9 +289,15 @@ button { cursor:pointer; }
 
 .stat-row {
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
   gap:15px;
   margin:30px 0;
+  animation:fadeUp .3s ease both;
+}
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(8px); }
+  to { opacity:1; transform:translateY(0); }
 }
 
 .stat-card {
@@ -394,6 +394,11 @@ button { cursor:pointer; }
   color:var(--cyan);
   background:rgba(66,232,209,.1);
   transform:translateY(-2px);
+}
+
+.icon-btn:hover {
+  border-color:var(--red);
+  color:var(--red);
 }
 
 .table-wrap {
@@ -525,9 +530,10 @@ tr.active-ds { background:rgba(92,157,255,.14); }
   </header>
 
   <section class="hero">
-    <h1 class="page-title">Pair Comparison<br></h1>
+    <div class="eyebrow">GHI FORECAST AUDIT</div>
+    <h1 class="page-title">Pair Comparison<br>Audit</h1>
     <div class="page-sub">
-      Upload a PSS GHI file to Compare
+      Upload a PSS GHI Forecast vs Actual file. Compare
       <b>PSD00 vs XSD0</b>, <b>PN125 vs XN12</b>, and
       <b>PE100 vs XE10</b> block by block.
     </div>
@@ -540,7 +546,6 @@ tr.active-ds { background:rgba(92,157,255,.14); }
         <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
       </svg>
     </div>
-    <div class="dz-title">Drop your audit file here</div>
     <div class="dz-text">Click to select a .xlsx, .xls, or .csv file</div>
     <div class="dz-file" id="dz-file"></div>
   </div>
@@ -554,7 +559,12 @@ tr.active-ds { background:rgba(92,157,255,.14); }
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>Dataset</th><th>Total Mismatches</th><th>Uploaded</th><th></th></tr>
+          <tr>
+            <th>Dataset</th>
+            <th>Total Mismatches</th>
+            <th>Uploaded</th>
+            <th></th>
+          </tr>
         </thead>
         <tbody id="datasets-tbody"></tbody>
       </table>
@@ -568,7 +578,9 @@ tr.active-ds { background:rgba(92,157,255,.14); }
 
     <div class="toolbar">
       <h2 class="section-title">Flagged Time Blocks</h2>
-      <button class="btn-secondary" id="btn-download">Download Excel report</button>
+      <button class="btn-secondary" id="btn-download">
+        Download Excel report
+      </button>
     </div>
 
     <div id="pair-sections"></div>
@@ -648,6 +660,7 @@ function renderDatasets(){
   $$('[data-del]').forEach(btn=>{
     btn.addEventListener('click',e=>{
       e.stopPropagation();
+
       const id = btn.dataset.del;
       datasets = datasets.filter(d=>d.id!==id);
 
@@ -673,12 +686,15 @@ function openDataset(id){
   mismatches = d.mismatches;
   fileLabel = d.name;
   $('#dz-file').textContent = d.name;
+
   renderResults();
   renderDatasets();
 }
 
 function findCol(headers,key){
-  return headers.findIndex(h=>String(h||'').toUpperCase().includes(key.toUpperCase()));
+  return headers.findIndex(h=>
+    String(h||'').toUpperCase().includes(key.toUpperCase())
+  );
 }
 
 function excelDateToStr(v){
@@ -698,9 +714,16 @@ async function handleFile(file){
   try{
     const isCSV = /\.csv$/i.test(file.name);
     const data = isCSV ? await file.text() : await file.arrayBuffer();
-    const wb = XLSX.read(data,{type:isCSV?'string':'array',cellDates:true});
+    const wb = XLSX.read(data,{
+      type:isCSV?'string':'array',
+      cellDates:true
+    });
+
     const sheet = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet,{header:1,raw:true});
+    const rows = XLSX.utils.sheet_to_json(sheet,{
+      header:1,
+      raw:true
+    });
 
     if(!rows.length){
       showToast('No data found in file');
@@ -736,8 +759,8 @@ async function handleFile(file){
       const row = rows[r];
       if(!row||!row.length) continue;
 
-      const dateVal = dateCol>-1?excelDateToStr(row[dateCol]):'';
-      const tbVal = tbCol>-1?row[tbCol]:'';
+      const dateVal = dateCol>-1 ? excelDateToStr(row[dateCol]) : '';
+      const tbVal = tbCol>-1 ? row[tbCol] : '';
 
       for(const p of pairCols){
         if(p.colA===-1||p.colB===-1) continue;
@@ -745,8 +768,8 @@ async function handleFile(file){
         let v1 = row[p.colA];
         let v2 = row[p.colB];
 
-        v1 = v1===undefined||v1===null||v1===''?0:Number(v1);
-        v2 = v2===undefined||v2===null||v2===''?0:Number(v2);
+        v1 = v1===undefined||v1===null||v1==='' ? 0 : Number(v1);
+        v2 = v2===undefined||v2===null||v2==='' ? 0 : Number(v2);
 
         if(Number.isNaN(v1)||Number.isNaN(v2)) continue;
 
@@ -780,6 +803,7 @@ async function handleFile(file){
     renderDatasets();
     showToast('Audit completed successfully');
   }catch(err){
+    console.error(err);
     showToast('Could not read file: '+err.message);
   }
 }
@@ -808,7 +832,9 @@ function renderResults(){
     <div class="stat-card ${s.cls}">
       <div class="stat-label">${s.label}</div>
       <div class="stat-num">${s.num}</div>
-      <div class="stat-desc">${s.num?'flagged blocks':'all values equal'}</div>
+      <div class="stat-desc">
+        ${s.num?'flagged blocks':'all values equal'}
+      </div>
     </div>
   `).join('');
 
@@ -835,7 +861,11 @@ function renderPairSections(){
           </td>
         </tr>
       `).join('')
-      : `<tr><td colspan="5"><div class="empty-state">No mismatches — all values equal.</div></td></tr>`;
+      : `<tr>
+          <td colspan="5">
+            <div class="empty-state">No mismatches — all values equal.</div>
+          </td>
+        </tr>`;
 
     return `
       <div class="pair-section">
@@ -866,36 +896,57 @@ function renderPairSections(){
 }
 
 $('#btn-download').addEventListener('click',()=>{
-  if(!mismatches.length){
-    showToast('No mismatches to export');
+  if(!datasets.length){
+    showToast('No datasets to export');
     return;
   }
 
   const wb = XLSX.utils.book_new();
+  const usedNames = new Set();
 
-  PAIRS.forEach(p=>{
-    const rows = mismatches.filter(m=>m.pair===p.label);
-    const headerA = rows[0]?.headerA||p.a;
-    const headerB = rows[0]?.headerB||p.b;
+  datasets.forEach(d=>{
+    const rows = d.mismatches;
 
     const data = [
-      ['Date','Time Block',headerA,headerB,'Difference'],
-      ...rows.map(m=>[m.date,m.tb,m.v1,m.v2,m.diff])
+      ['Date','Time Block','Comparison','Value 1','Value 2','Difference'],
+      ...rows.map(m=>[
+        m.date,
+        m.tb,
+        m.pair,
+        m.v1,
+        m.v2,
+        m.diff
+      ])
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(data);
+
     ws['!cols'] = [
       {wch:12},
       {wch:14},
-      {wch:16},
-      {wch:16},
+      {wch:18},
+      {wch:10},
+      {wch:10},
       {wch:10}
     ];
 
-    XLSX.utils.book_append_sheet(wb,ws,p.label.slice(0,31));
+    let sheetName = d.name
+      .replace(/[\\\/\?\*\[\]:]/g,'')
+      .slice(0,31) || 'Sheet';
+
+    let finalName = sheetName;
+    let n = 2;
+
+    while(usedNames.has(finalName)){
+      finalName = (sheetName.slice(0,28)+'_'+n).slice(0,31);
+      n++;
+    }
+
+    usedNames.add(finalName);
+    XLSX.utils.book_append_sheet(wb,ws,finalName);
   });
 
-  XLSX.writeFile(wb,`${fileLabel||'GHI'}_Mismatch_Report.xlsx`);
+  XLSX.writeFile(wb,'GHI_Mismatch_Report.xlsx');
   showToast('Report downloaded');
 });
 </script>
